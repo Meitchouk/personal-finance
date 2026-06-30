@@ -1,48 +1,65 @@
 "use client";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { CategorySpending } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils/date-helpers";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { usePreferences } from "@/components/providers/PreferencesProvider";
+import type { CategorySpending } from "@/lib/types";
 
-interface Props {
-  data: CategorySpending[];
-}
+export default function CategoryPieChart({ data }: { data: CategorySpending[] }) {
+  const { formatMoney } = usePreferences();
 
-export default function CategoryPieChart({ data }: Props) {
   if (!data.length) {
     return (
-      <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
         Sin datos para mostrar
       </div>
     );
   }
 
   const chartData = data.map((d) => ({
-    name: `${d.category.emoji} ${d.category.name}`,
+    name: d.category.name,
     value: d.total,
     color: d.category.color,
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <PieChart>
-        <Pie
-          data={chartData}
-          cx="50%"
-          cy="45%"
-          outerRadius={90}
-          dataKey="value"
-          label={({ percent }) => percent != null ? `${(percent * 100).toFixed(0)}%` : ""}
-          labelLine={false}
-        >
-          {chartData.map((entry, index) => (
-            <Cell key={index} fill={entry.color} />
-          ))}
-        </Pie>
-        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-        <Legend
-          formatter={(value) => <span className="text-xs">{value}</span>}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="flex flex-col items-center gap-4 sm:flex-row">
+      <ResponsiveContainer width="100%" height={200} className="max-w-[240px]">
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius={50}
+            outerRadius={85}
+            paddingAngle={2}
+            dataKey="value"
+            stroke="none"
+          >
+            {chartData.map((entry, i) => (
+              <Cell key={i} fill={entry.color} />
+            ))}
+          </Pie>
+          <Tooltip
+            formatter={(value) => formatMoney(Number(value))}
+            contentStyle={{
+              borderRadius: "0.5rem",
+              border: "1px solid var(--border)",
+              background: "var(--popover)",
+              color: "var(--popover-foreground)",
+              fontSize: "12px",
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+
+      <ul className="grid w-full grid-cols-1 gap-1.5 sm:max-w-[180px]">
+        {data.slice(0, 6).map((d) => (
+          <li key={d.category.id} className="flex items-center gap-2 text-xs">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.category.color }} />
+            <span className="flex-1 truncate text-muted-foreground">{d.category.name}</span>
+            <span className="font-medium tabular-nums">{d.percentage.toFixed(0)}%</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

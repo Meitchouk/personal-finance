@@ -6,13 +6,21 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
 
-  if (code) {
+  // Error sent by the provider/Supabase before we even get a code.
+  const providerError = searchParams.get("error_description") || searchParams.get("error");
+
+  if (code && !providerError) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
     }
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(error.message)}`
+    );
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth`);
+  return NextResponse.redirect(
+    `${origin}/login?error=${encodeURIComponent(providerError ?? "No se recibió el código de autenticación")}`
+  );
 }
