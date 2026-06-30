@@ -13,10 +13,9 @@ import { Transaction, TransactionFilters } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { ExternalLink, FileSpreadsheet, Plus, Search, RefreshCw, AlertCircle } from "lucide-react";
+import { ExternalLink, FileSpreadsheet, Plus, Search, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -249,7 +248,7 @@ export default function SheetsExport({ open, onClose, filters }: Props) {
                         <button
                           key={s.id}
                           onClick={() => { setSelectedSheet(s); setStep("month"); }}
-                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-left transition-colors"
+                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted text-left transition-colors"
                         >
                           <FileSpreadsheet className="h-5 w-5 text-green-600 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
@@ -308,7 +307,7 @@ export default function SheetsExport({ open, onClose, filters }: Props) {
           {step === "done" && (
             <div className="space-y-4">
               <div className="text-center py-4">
-                <div className="text-4xl mb-3">✅</div>
+                <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-emerald-600" />
                 <p className="font-semibold">¡Exportado con éxito!</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Pestaña &quot;<strong>{monthTitle}</strong>&quot; actualizada

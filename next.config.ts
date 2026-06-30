@@ -10,3 +10,6 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {};
 
 export default withSerwist(nextConfig);
+module.exports = {
+  allowedDevOrigins: ['lelah-orrow-unreluctantly.ngrok-free.dev'],
+}

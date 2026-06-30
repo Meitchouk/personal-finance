@@ -24,7 +24,7 @@ export function useTransactions(filters?: TransactionFilters) {
     const { data } = await query;
     setTransactions((data as Transaction[]) ?? []);
     setLoading(false);
-  }, [filters?.type, filters?.category_id, filters?.date_from, filters?.date_to, filters?.search]);
+  }, [filters]);
 
   useEffect(() => { fetch(); }, [fetch]);
 

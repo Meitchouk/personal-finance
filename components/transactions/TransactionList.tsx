@@ -1,15 +1,17 @@
 "use client";
 import { useState } from "react";
-import { Transaction, Category } from "@/lib/types";
-import { formatCurrency, formatDate } from "@/lib/utils/date-helpers";
-import { Badge } from "@/components/ui/badge";
+import type { Transaction, Category } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Pencil, Trash2, RefreshCw } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Receipt } from "lucide-react";
 import TransactionForm from "./TransactionForm";
+import TransactionRow from "./TransactionRow";
+import EmptyState from "@/components/shared/EmptyState";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { toast } from "sonner";
 
 interface Props {
@@ -20,21 +22,32 @@ interface Props {
 
 export default function TransactionList({ transactions, categories, onRefetch }: Props) {
   const [editing, setEditing] = useState<Transaction | null>(null);
+  const confirm = useConfirm();
 
-  async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar esta transacción?")) return;
-    const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+  async function handleDelete(t: Transaction) {
+    const ok = await confirm({
+      title: "Eliminar transacción",
+      description: `Se eliminará "${t.description}". Esta acción no se puede deshacer.`,
+      confirmLabel: "Eliminar",
+      destructive: true,
+    });
+    if (!ok) return;
+    const res = await fetch(`/api/transactions/${t.id}`, { method: "DELETE" });
     if (res.ok) {
       toast.success("Transacción eliminada");
       onRefetch();
+    } else {
+      toast.error("No se pudo eliminar");
     }
   }
 
   if (!transactions.length) {
     return (
-      <div className="text-center py-12 text-muted-foreground text-sm">
-        No hay transacciones. ¡Agrega una!
-      </div>
+      <EmptyState
+        icon={Receipt}
+        title="No hay transacciones"
+        description="Ajusta los filtros o agrega una nueva."
+      />
     );
   }
 
@@ -42,42 +55,30 @@ export default function TransactionList({ transactions, categories, onRefetch }:
     <>
       <div className="space-y-2">
         {transactions.map((t) => (
-          <div key={t.id} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0"
-              style={{ backgroundColor: t.categories?.color ? `${t.categories.color}22` : "#f3f4f6" }}
-            >
-              {t.categories?.emoji ?? "💳"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{t.description}</p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-muted-foreground">{formatDate(t.date)}</span>
-                {t.categories && (
-                  <Badge variant="outline" className="text-xs py-0 h-4" style={{ borderColor: t.categories.color, color: t.categories.color }}>
-                    {t.categories.name}
-                  </Badge>
-                )}
-                {t.is_recurring && <RefreshCw className="h-3 w-3 text-muted-foreground" />}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`font-semibold text-sm ${t.type === "income" ? "text-emerald-600" : "text-rose-500"}`}>
-                {t.type === "income" ? "+" : "-"}{formatCurrency(t.amount)}
-              </span>
-              <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>} />
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setEditing(t)}>
-                    <Pencil className="h-4 w-4 mr-2" /> Editar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-rose-600" onClick={() => handleDelete(t.id)}>
-                    <Trash2 className="h-4 w-4 mr-2" /> Eliminar
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+          <Card key={t.id} className="px-4 py-3">
+            <TransactionRow
+              transaction={t}
+              actions={
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button variant="ghost" size="icon-sm" aria-label="Acciones">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditing(t)}>
+                      <Pencil className="mr-2 h-4 w-4" /> Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem variant="destructive" onClick={() => handleDelete(t)}>
+                      <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
+            />
+          </Card>
         ))}
       </div>
 

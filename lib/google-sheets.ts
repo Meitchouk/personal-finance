@@ -1,6 +1,5 @@
 import { Transaction } from "@/lib/types";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatMonthYear } from "@/lib/format";
 
 const SHEETS_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
 const DRIVE_BASE = "https://www.googleapis.com/drive/v3";
@@ -129,7 +128,7 @@ export async function writeTransactionsToSheet(
 }
 
 export function getMonthSheetTitle(date?: Date): string {
-  return format(date ?? new Date(), "MMMM yyyy", { locale: es }).replace(/^\w/, (c) => c.toUpperCase());
+  return formatMonthYear(date ?? new Date());
 }
 
 export function getSpreadsheetUrl(id: string): string {

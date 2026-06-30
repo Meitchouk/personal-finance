@@ -1,56 +1,79 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useCategories } from "@/lib/hooks/useCategories";
 import { useBudgets } from "@/lib/hooks/useBudgets";
-import { Budget, Category } from "@/lib/types";
+import { usePreferences } from "@/components/providers/PreferencesProvider";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
+import type { Budget } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
+import { expenseTotalsByCategory } from "@/lib/utils/aggregations";
+import { getCurrentMonthRange } from "@/lib/utils/date-helpers";
+import { formatMonthYear } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import PageHeader from "@/components/shared/PageHeader";
+import CategoryIcon from "@/components/shared/CategoryIcon";
+import EmptyState from "@/components/shared/EmptyState";
+import { GridSkeleton } from "@/components/shared/Skeletons";
+import { getCategoryIcon } from "@/lib/icons";
+import { Plus, Trash2, Pencil, Target } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { formatCurrency, getCurrentMonthRange } from "@/lib/utils/date-helpers";
 
-interface BudgetWithSpent extends Budget {
-  spent: number;
+function barColor(pct: number) {
+  if (pct >= 100) return "bg-expense";
+  if (pct >= 75) return "bg-amber-500";
+  return "bg-income";
 }
 
 export default function BudgetsPage() {
   const { categories } = useCategories();
-  const { budgets, refetch } = useBudgets();
-  const [spentMap, setSpentMap] = useState<Record<string, number>>({});
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const { budgets, loading, refetch } = useBudgets();
+  const { formatMoney } = usePreferences();
+  const confirm = useConfirm();
+
+  const [spent, setSpent] = useState<Record<string, number>>({});
+  const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Budget | null>(null);
   const [form, setForm] = useState({ category_id: "", monthly_limit: "" });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    async function loadSpent() {
-      const { from, to } = getCurrentMonthRange();
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("transactions")
-        .select("category_id, amount")
-        .eq("type", "expense")
-        .gte("date", from)
-        .lte("date", to);
-      const map: Record<string, number> = {};
-      (data ?? []).forEach((t: { category_id: string | null; amount: number }) => {
-        if (t.category_id) map[t.category_id] = (map[t.category_id] ?? 0) + t.amount;
-      });
-      setSpentMap(map);
-    }
-    loadSpent();
-  }, [budgets]);
+  const loadSpent = useCallback(async () => {
+    const { from, to } = getCurrentMonthRange();
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("transactions")
+      .select("category_id, amount, type")
+      .eq("type", "expense")
+      .gte("date", from)
+      .lte("date", to);
+    setSpent(expenseTotalsByCategory(data ?? []));
+  }, []);
 
-  function openCreate() { setForm({ category_id: "", monthly_limit: "" }); setEditing(null); setSheetOpen(true); }
-  function openEdit(b: Budget) { setForm({ category_id: b.category_id, monthly_limit: b.monthly_limit.toString() }); setEditing(b); setSheetOpen(true); }
+  useEffect(() => {
+    loadSpent();
+  }, [loadSpent, budgets]);
+
+  function openCreate() {
+    setForm({ category_id: "", monthly_limit: "" });
+    setEditing(null);
+    setOpen(true);
+  }
+  function openEdit(b: Budget) {
+    setForm({ category_id: b.category_id, monthly_limit: b.monthly_limit.toString() });
+    setEditing(b);
+    setOpen(true);
+  }
 
   async function handleSave() {
-    if (!form.category_id || !form.monthly_limit) { toast.error("Completa todos los campos"); return; }
+    if (!form.category_id || !form.monthly_limit) {
+      toast.error("Completa todos los campos");
+      return;
+    }
     setSaving(true);
     const res = await fetch("/api/budgets", {
       method: "POST",
@@ -58,82 +81,93 @@ export default function BudgetsPage() {
       body: JSON.stringify({ category_id: form.category_id, monthly_limit: parseFloat(form.monthly_limit) }),
     });
     setSaving(false);
-    if (res.ok) { toast.success(editing ? "Presupuesto actualizado" : "Presupuesto creado"); refetch(); setSheetOpen(false); }
-    else { const { error } = await res.json(); toast.error(error); }
+    if (res.ok) {
+      toast.success(editing ? "Presupuesto actualizado" : "Presupuesto creado");
+      refetch();
+      setOpen(false);
+    } else {
+      const { error } = await res.json();
+      toast.error(error);
+    }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este presupuesto?")) return;
-    const res = await fetch(`/api/budgets?id=${id}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Presupuesto eliminado"); refetch(); }
+  async function handleDelete(b: Budget) {
+    const ok = await confirm({
+      title: "Eliminar presupuesto",
+      description: `Se eliminará el límite de "${b.categories?.name}".`,
+      confirmLabel: "Eliminar",
+      destructive: true,
+    });
+    if (!ok) return;
+    const res = await fetch(`/api/budgets?id=${b.id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Presupuesto eliminado");
+      refetch();
+    }
   }
 
-  const budgetsWithSpent: BudgetWithSpent[] = budgets.map((b) => ({
-    ...b,
-    spent: spentMap[b.category_id] ?? 0,
-  }));
-
-  const usedCategoryIds = new Set(budgets.map((b) => b.category_id));
-  const availableCategories = editing
-    ? categories
-    : categories.filter((c) => !usedCategoryIds.has(c.id));
-
-  function getBudgetColor(pct: number) {
-    if (pct >= 100) return "bg-rose-500";
-    if (pct >= 75) return "bg-amber-400";
-    return "bg-emerald-500";
-  }
+  const usedIds = new Set(budgets.map((b) => b.category_id));
+  const availableCategories = editing ? categories : categories.filter((c) => !usedIds.has(c.id));
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Presupuesto</h1>
-          <p className="text-sm text-muted-foreground">Este mes</p>
-        </div>
-        <Button className="bg-emerald-500 hover:bg-emerald-600" size="icon" onClick={openCreate}>
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+      <PageHeader
+        title="Presupuesto"
+        subtitle={formatMonthYear()}
+        action={
+          <Button size="icon" aria-label="Nuevo presupuesto" onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        }
+      />
 
-      {budgetsWithSpent.length === 0 ? (
-        <Card className="shadow-sm border-0">
-          <CardContent className="py-12 text-center text-muted-foreground text-sm">
-            No tienes presupuestos. ¡Crea uno!
-          </CardContent>
-        </Card>
+      {loading ? (
+        <GridSkeleton count={4} />
+      ) : budgets.length === 0 ? (
+        <EmptyState
+          icon={Target}
+          title="Sin presupuestos"
+          description="Define un límite mensual por categoría para controlar tus gastos."
+        />
       ) : (
         <div className="space-y-3">
-          {budgetsWithSpent.map((b) => {
-            const pct = Math.min((b.spent / b.monthly_limit) * 100, 100);
-            const cat = b.categories as Category | null;
+          {budgets.map((b) => {
+            const used = spent[b.category_id] ?? 0;
+            const pct = Math.min((used / b.monthly_limit) * 100, 100);
+            const over = used > b.monthly_limit;
             return (
-              <Card key={b.id} className="shadow-sm border-0">
-                <CardContent className="p-4 space-y-3">
+              <Card key={b.id}>
+                <CardContent className="space-y-3 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">{cat?.emoji}</span>
-                      <span className="font-medium">{cat?.name}</span>
+                      <CategoryIcon category={b.categories} size="sm" />
+                      <span className="font-medium">{b.categories?.name}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => openEdit(b)} className="text-gray-400 hover:text-gray-600 p-1">
+                      <button
+                        onClick={() => openEdit(b)}
+                        aria-label="Editar"
+                        className="p-1 text-muted-foreground transition-colors hover:text-foreground"
+                      >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
-                      <button onClick={() => handleDelete(b.id)} className="text-gray-400 hover:text-rose-500 p-1">
+                      <button
+                        onClick={() => handleDelete(b)}
+                        aria-label="Eliminar"
+                        className="p-1 text-muted-foreground transition-colors hover:text-destructive"
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all ${getBudgetColor(pct)}`} style={{ width: `${pct}%` }} />
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div className={cn("h-full rounded-full transition-all", barColor(pct))} style={{ width: `${pct}%` }} />
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {formatCurrency(b.spent)} gastado
+                    <span className={cn("tabular-nums", over ? "font-medium text-expense" : "text-muted-foreground")}>
+                      {formatMoney(used)}
                     </span>
-                    <span className={pct >= 100 ? "text-rose-500 font-medium" : "text-muted-foreground"}>
-                      {formatCurrency(b.monthly_limit)} límite
-                    </span>
+                    <span className="text-muted-foreground tabular-nums">de {formatMoney(b.monthly_limit)}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -142,37 +176,48 @@ export default function BudgetsPage() {
         </div>
       )}
 
-      <Sheet open={sheetOpen} onOpenChange={(o) => !o && setSheetOpen(false)}>
+      <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="h-auto rounded-t-2xl pb-8">
           <SheetHeader>
             <SheetTitle>{editing ? "Editar presupuesto" : "Nuevo presupuesto"}</SheetTitle>
           </SheetHeader>
           <div className="mt-4 space-y-4">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label>Categoría</Label>
-              <Select value={form.category_id} onValueChange={(v) => setForm((f) => ({ ...f, category_id: v ?? "" }))}>
-                <SelectTrigger>
+              <Select
+                value={form.category_id}
+                onValueChange={(v) => setForm((f) => ({ ...f, category_id: v ?? "" }))}
+                disabled={!!editing}
+              >
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecciona una categoría" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableCategories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.emoji} {c.name}</SelectItem>
-                  ))}
+                  {availableCategories.map((c) => {
+                    const Icon = getCategoryIcon(c.icon);
+                    return (
+                      <SelectItem key={c.id} value={c.id}>
+                        <Icon className="h-4 w-4" style={{ color: c.color }} />
+                        {c.name}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label>Límite mensual</Label>
               <Input
                 type="number"
                 step="0.01"
                 min="0"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={form.monthly_limit}
                 onChange={(e) => setForm((f) => ({ ...f, monthly_limit: e.target.value }))}
               />
             </div>
-            <Button className="w-full bg-emerald-500 hover:bg-emerald-600" onClick={handleSave} disabled={saving}>
+            <Button className="w-full" onClick={handleSave} disabled={saving}>
               {saving ? "Guardando..." : editing ? "Actualizar" : "Crear presupuesto"}
             </Button>
           </div>
