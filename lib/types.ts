@@ -1,8 +1,13 @@
+import type { CurrencyCode } from "@/lib/format";
+
 export type TransactionType = "income" | "expense";
 
 export interface Profile {
   id: string;
   display_name: string | null;
+  currency: CurrencyCode;
+  google_sheet_id: string | null;
+  google_sheet_name: string | null;
   created_at: string;
 }
 
@@ -10,7 +15,7 @@ export interface Category {
   id: string;
   user_id: string;
   name: string;
-  emoji: string;
+  icon: string;
   color: string;
   is_default: boolean;
   created_at: string;
@@ -42,7 +47,6 @@ export interface Budget {
 
 export interface BudgetWithSpent extends Budget {
   spent: number;
-  percentage: number;
 }
 
 export interface MonthlySummary {
