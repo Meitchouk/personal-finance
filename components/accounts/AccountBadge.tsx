@@ -1,5 +1,5 @@
 import { Landmark, CreditCard, Wallet, Smartphone, Package } from "lucide-react";
-import type { Account, AccountType } from "@/lib/types";
+import type { Account, AccountNature, AccountType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const TYPE_ICONS: Record<AccountType, typeof Wallet> = {
@@ -16,6 +16,11 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   cash: "Efectivo",
   digital: "Monedero digital",
   other: "Otro",
+};
+
+export const ACCOUNT_NATURE_LABELS: Record<AccountNature, string> = {
+  debit: "Débito",
+  credit: "Crédito",
 };
 
 export function getAccountIcon(type: AccountType) {

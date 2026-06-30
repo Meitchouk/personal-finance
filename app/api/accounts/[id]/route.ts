@@ -12,6 +12,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   if (typeof body.name === "string" && body.name.trim()) allowed.name = body.name.trim();
   if (["bank", "card", "cash", "digital", "other"].includes(body.type)) allowed.type = body.type;
+  if (["debit", "credit"].includes(body.nature)) allowed.nature = body.nature;
   if (typeof body.color === "string") allowed.color = body.color;
   if (typeof body.is_active === "boolean") allowed.is_active = body.is_active;
 

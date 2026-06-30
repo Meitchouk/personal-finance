@@ -3,15 +3,52 @@ import type { CurrencyCode } from "@/lib/format";
 export type TransactionType = "income" | "expense";
 
 export type AccountType = "bank" | "card" | "cash" | "digital" | "other";
+export type AccountNature = "debit" | "credit";
 
 export interface Account {
   id: string;
   user_id: string;
   name: string;
   type: AccountType;
+  nature: AccountNature;
   color: string;
   is_active: boolean;
   created_at: string;
+  credit_balance?: number;
+}
+
+export interface DebtItem {
+  id: string;
+  debt_id: string;
+  description: string;
+  amount: number;
+  quantity: number;
+  item_date: string;
+  is_paid: boolean;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export interface DebtProduct {
+  id: string;
+  debt_id: string;
+  name: string;
+  unit_price: number;
+  unit: string | null;
+  created_at: string;
+}
+
+export interface Debt {
+  id: string;
+  user_id: string;
+  creditor_name: string;
+  notes: string | null;
+  account_id: string | null;
+  is_saved: boolean;
+  created_at: string;
+  accounts?: Account | null;
+  debt_items?: DebtItem[];
+  debt_products?: DebtProduct[];
 }
 
 export interface Profile {
