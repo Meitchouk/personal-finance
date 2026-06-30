@@ -68,6 +68,7 @@ export async function buildTransactionPayload(
     type: body.type,
     description: body.description,
     category_id: body.category_id || null,
+    account_id: body.account_id || null,
     date: body.date,
     is_recurring: Boolean(body.is_recurring),
     recurrence_rule: body.is_recurring ? body.recurrence_rule : null,

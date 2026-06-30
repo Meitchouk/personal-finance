@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from("transactions")
-    .select("*, categories(*)", { count: "exact" })
+    .select("*, categories(*), accounts(*)", { count: "exact" })
     .eq("user_id", user.id)
     .order("date", { ascending: false })
     .range(offset, offset + limit - 1);
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from("transactions")
     .insert({ ...payload, user_id: user.id })
-    .select("*, categories(*)")
+    .select("*, categories(*), accounts(*)")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

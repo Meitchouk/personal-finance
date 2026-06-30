@@ -14,8 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import PageHeader from "@/components/shared/PageHeader";
+import AppSheet from "@/components/shared/AppSheet";
 import CategoryIcon from "@/components/shared/CategoryIcon";
 import EmptyState from "@/components/shared/EmptyState";
 import { GridSkeleton } from "@/components/shared/Skeletons";
@@ -179,12 +179,8 @@ export default function BudgetsPage() {
         </div>
       )}
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="h-auto rounded-t-2xl pb-8">
-          <SheetHeader>
-            <SheetTitle>{editing ? "Editar presupuesto" : "Nuevo presupuesto"}</SheetTitle>
-          </SheetHeader>
-          <div className="mt-4 space-y-4">
+      <AppSheet open={open} onOpenChange={setOpen} title={editing ? "Editar presupuesto" : "Nuevo presupuesto"}>
+        <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>Categoría</Label>
               <Select
@@ -220,9 +216,8 @@ export default function BudgetsPage() {
             <Button className="w-full" onClick={handleSave} disabled={saving}>
               {saving ? "Guardando..." : editing ? "Actualizar" : "Crear presupuesto"}
             </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </AppSheet>
     </div>
   );
 }

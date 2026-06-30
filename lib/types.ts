@@ -2,6 +2,18 @@ import type { CurrencyCode } from "@/lib/format";
 
 export type TransactionType = "income" | "expense";
 
+export type AccountType = "bank" | "card" | "cash" | "digital" | "other";
+
+export interface Account {
+  id: string;
+  user_id: string;
+  name: string;
+  type: AccountType;
+  color: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface Profile {
   id: string;
   display_name: string | null;
@@ -26,6 +38,7 @@ export interface Transaction {
   id: string;
   user_id: string;
   category_id: string | null;
+  account_id: string | null;
   amount: number;
   original_amount: number;
   original_currency: CurrencyCode;
@@ -38,6 +51,7 @@ export interface Transaction {
   parent_recurring_id: string | null;
   created_at: string;
   categories?: Category | null;
+  accounts?: Account | null;
 }
 
 export interface Budget {
@@ -69,6 +83,20 @@ export interface MonthlyTrend {
   month: string;
   income: number;
   expenses: number;
+}
+
+export interface TransactionTemplate {
+  id: string;
+  user_id: string;
+  description: string;
+  type: TransactionType;
+  original_amount: number;
+  original_currency: CurrencyCode;
+  category_id: string | null;
+  account_id: string | null;
+  created_at: string;
+  categories?: Category | null;
+  accounts?: Account | null;
 }
 
 export interface TransactionFilters {

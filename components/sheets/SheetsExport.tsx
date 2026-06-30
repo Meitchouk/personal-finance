@@ -14,7 +14,7 @@ import { Transaction, TransactionFilters } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import AppSheet from "@/components/shared/AppSheet";
 import { toast } from "sonner";
 import { ExternalLink, FileSpreadsheet, Plus, Search, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
@@ -150,16 +150,17 @@ export default function SheetsExport({ open, onClose, filters }: Props) {
   const filtered = spreadsheets.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="bottom" className="h-auto max-h-[90vh] overflow-y-auto rounded-t-2xl pb-8">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5 text-green-600" />
-            Exportar a Google Sheets
-          </SheetTitle>
-        </SheetHeader>
-
-        <div className="mt-4">
+    <AppSheet
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      title={
+        <span className="flex items-center gap-2">
+          <FileSpreadsheet className="h-5 w-5 text-green-600" />
+          Exportar a Google Sheets
+        </span>
+      }
+    >
+      <div>
           {/* No scopes error */}
           {noScopesError && (
             <div className="space-y-3">
@@ -326,8 +327,7 @@ export default function SheetsExport({ open, onClose, filters }: Props) {
               </Button>
             </div>
           )}
-        </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </AppSheet>
   );
 }

@@ -97,6 +97,49 @@ alter table public.budgets enable row level security;
 create policy "Users can manage own budgets" on public.budgets
   for all using (auth.uid() = user_id);
 
+-- ---------- Accounts ----------
+create table public.accounts (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  name text not null,
+  type text not null check (type in ('bank', 'card', 'cash', 'digital', 'other')),
+  color text not null default '#3b82f6',
+  is_active boolean not null default true,
+  created_at timestamptz default now()
+);
+
+alter table public.accounts enable row level security;
+create policy "Users manage own accounts" on public.accounts
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- account_id FK on transactions (added via migration 20260630_add_accounts.sql)
+alter table public.transactions
+  add column if not exists account_id uuid references public.accounts(id) on delete set null,
+  add column if not exists original_amount numeric(12,2),
+  add column if not exists original_currency text not null default 'NIO',
+  add column if not exists exchange_rate numeric(12,6) not null default 1;
+
+create index if not exists transactions_user_account on public.transactions(user_id, account_id);
+
+-- ---------- Transaction templates (quick-access shortcuts) ----------
+create table public.transaction_templates (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  description text not null,
+  type transaction_type not null,
+  original_amount numeric(12,2) not null check (original_amount > 0),
+  original_currency text not null default 'NIO',
+  category_id uuid references public.categories(id) on delete set null,
+  account_id uuid references public.accounts(id) on delete set null,
+  created_at timestamptz default now()
+);
+
+alter table public.transaction_templates enable row level security;
+create policy "Users manage own templates" on public.transaction_templates
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create index templates_user_idx on public.transaction_templates(user_id, created_at desc);
+
 -- ---------- Seed default categories + profile on signup ----------
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer as $$

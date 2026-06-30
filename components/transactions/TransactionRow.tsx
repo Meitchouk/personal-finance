@@ -1,5 +1,6 @@
 import CategoryIcon from "@/components/shared/CategoryIcon";
 import AmountText from "@/components/shared/AmountText";
+import AccountBadge from "@/components/accounts/AccountBadge";
 import { Badge } from "@/components/ui/badge";
 import { BASE_CURRENCY } from "@/lib/currency";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -32,6 +33,7 @@ export default function TransactionRow({ transaction: t, actions, compact }: Pro
             </Badge>
           )}
           {t.is_recurring && <Repeat className="h-3 w-3 text-muted-foreground" />}
+          {t.accounts && <AccountBadge account={t.accounts} />}
           {t.original_currency && t.original_currency !== BASE_CURRENCY && (
             <span className="text-xs text-muted-foreground">
               {formatCurrency(t.original_amount, t.original_currency)}

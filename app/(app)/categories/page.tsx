@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import PageHeader from "@/components/shared/PageHeader";
+import AppSheet from "@/components/shared/AppSheet";
 import CategoryIcon from "@/components/shared/CategoryIcon";
 import IconPicker from "@/components/shared/IconPicker";
 import ColorPicker from "@/components/shared/ColorPicker";
@@ -141,12 +141,8 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="h-auto max-h-[90vh] overflow-y-auto rounded-t-2xl pb-8">
-          <SheetHeader>
-            <SheetTitle>{editing ? "Editar categoría" : "Nueva categoría"}</SheetTitle>
-          </SheetHeader>
-          <div className="mt-4 space-y-5">
+      <AppSheet open={open} onOpenChange={setOpen} title={editing ? "Editar categoría" : "Nueva categoría"}>
+        <div className="space-y-5">
             <div className="flex items-center gap-3 rounded-xl bg-muted p-3">
               <CategoryIcon iconKey={form.icon} color={form.color} size="lg" />
               <span className="font-medium">{form.name || "Vista previa"}</span>
@@ -194,9 +190,8 @@ export default function CategoriesPage() {
             <Button className="w-full" onClick={handleSave} disabled={saving}>
               {saving ? "Guardando..." : editing ? "Actualizar" : "Crear categoría"}
             </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </AppSheet>
     </div>
   );
 }

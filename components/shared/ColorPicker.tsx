@@ -10,7 +10,7 @@ interface Props {
 
 export default function ColorPicker({ value, onChange }: Props) {
   return (
-    <div className="grid grid-cols-10 gap-2">
+    <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
       {CATEGORY_COLORS.map((color) => {
         const selected = value.toLowerCase() === color.toLowerCase();
         return (
@@ -21,7 +21,7 @@ export default function ColorPicker({ value, onChange }: Props) {
             aria-pressed={selected}
             onClick={() => onChange(color)}
             className={cn(
-              "flex aspect-square items-center justify-center rounded-full transition-transform",
+              "flex size-8 items-center justify-center rounded-full transition-transform",
               selected && "scale-110 ring-2 ring-offset-2 ring-offset-background ring-foreground/30"
             )}
             style={{ backgroundColor: color }}

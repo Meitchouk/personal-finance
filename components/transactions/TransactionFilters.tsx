@@ -78,7 +78,9 @@ export default function TransactionFiltersBar({ filters, categories, onChange }:
   }
 
   function clearDates() {
-    const { date_from: _f, date_to: _t, ...rest } = filters;
+    const rest = { ...filters };
+    delete rest.date_from;
+    delete rest.date_to;
     onChange(rest);
     setDateOpen(false);
   }
@@ -225,21 +227,25 @@ export default function TransactionFiltersBar({ filters, categories, onChange }:
 
       {/* ── Mobile date range — collapsible ──────────────────────── */}
       <div className="overflow-hidden rounded-lg border border-border md:hidden">
-        <button
-          type="button"
-          onClick={() => setDateOpen((v) => !v)}
+        <div
           className={cn(
             "flex w-full items-center gap-2 px-3 py-2.5 text-sm transition-colors hover:bg-muted/50",
             hasDateFilter ? "text-foreground" : "text-muted-foreground"
           )}
         >
-          <Calendar className="h-4 w-4 shrink-0" />
-          <span className="flex-1 text-left font-medium">
+          <button
+            type="button"
+            onClick={() => setDateOpen((v) => !v)}
+            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          >
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span className="min-w-0 flex-1 truncate font-medium">
             {formatDateSummary(filters.date_from, filters.date_to)}
-          </span>
+            </span>
+          </button>
           {hasDateFilter && (
-            <span
-              role="button"
+            <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 clearDates();
@@ -248,14 +254,21 @@ export default function TransactionFiltersBar({ filters, categories, onChange }:
               aria-label="Limpiar período"
             >
               <X className="h-3.5 w-3.5" />
-            </span>
+            </button>
           )}
-          {dateOpen ? (
-            <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-          )}
-        </button>
+          <button
+            type="button"
+            onClick={() => setDateOpen((v) => !v)}
+            aria-label={dateOpen ? "Cerrar período" : "Abrir período"}
+            className="text-muted-foreground"
+          >
+            {dateOpen ? (
+              <ChevronUp className="h-4 w-4 shrink-0" />
+            ) : (
+              <ChevronDown className="h-4 w-4 shrink-0" />
+            )}
+          </button>
+        </div>
 
         {dateOpen && (
           <div className="grid gap-3 border-t border-border bg-muted/20 px-3 pb-3 pt-2.5">

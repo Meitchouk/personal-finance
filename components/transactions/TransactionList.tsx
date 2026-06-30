@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
-import type { Transaction, Category } from "@/lib/types";
+import type { Account, Transaction, Category } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import AppSheet from "@/components/shared/AppSheet";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -17,10 +17,11 @@ import { toast } from "sonner";
 interface Props {
   transactions: Transaction[];
   categories: Category[];
+  accounts?: Account[];
   onRefetch: () => void;
 }
 
-export default function TransactionList({ transactions, categories, onRefetch }: Props) {
+export default function TransactionList({ transactions, categories, accounts = [], onRefetch }: Props) {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const confirm = useConfirm();
 
@@ -82,26 +83,17 @@ export default function TransactionList({ transactions, categories, onRefetch }:
         ))}
       </div>
 
-      <Sheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <SheetContent
-          side="right"
-          className="h-full w-full overflow-x-hidden overflow-y-auto md:w-[min(52rem,calc(100vw-2rem))]"
-        >
-          <SheetHeader className="border-b border-border">
-            <SheetTitle>Editar transacción</SheetTitle>
-          </SheetHeader>
-          <div className="px-4 pb-6">
-            {editing && (
-              <TransactionForm
-                categories={categories}
-                transaction={editing}
-                onSuccess={() => { setEditing(null); onRefetch(); }}
-                onCancel={() => setEditing(null)}
-              />
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <AppSheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)} title="Editar transacción" size="wide">
+        {editing && (
+          <TransactionForm
+            categories={categories}
+            accounts={accounts}
+            transaction={editing}
+            onSuccess={() => { setEditing(null); onRefetch(); }}
+            onCancel={() => setEditing(null)}
+          />
+        )}
+      </AppSheet>
     </>
   );
 }

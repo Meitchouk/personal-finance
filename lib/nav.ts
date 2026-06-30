@@ -5,6 +5,7 @@ import {
   Target,
   PieChart,
   Settings,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,5 +27,6 @@ export const PRIMARY_NAV: NavItem[] = [
 
 /** Secondary destinations (sidebar / settings menu). */
 export const SECONDARY_NAV: NavItem[] = [
+  { href: "/accounts", label: "Cuentas", shortLabel: "Cuentas", icon: Wallet },
   { href: "/settings", label: "Ajustes", shortLabel: "Ajustes", icon: Settings },
 ];
