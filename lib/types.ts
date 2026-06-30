@@ -17,6 +17,7 @@ export interface Category {
   name: string;
   icon: string;
   color: string;
+  type: TransactionType;
   is_default: boolean;
   created_at: string;
 }
@@ -26,6 +27,9 @@ export interface Transaction {
   user_id: string;
   category_id: string | null;
   amount: number;
+  original_amount: number;
+  original_currency: CurrencyCode;
+  exchange_rate: number;
   type: TransactionType;
   description: string;
   date: string;

@@ -1,37 +1,63 @@
 "use client";
 import { useState } from "react";
 import { useCategories } from "@/lib/hooks/useCategories";
-import { Category } from "@/lib/types";
+import type { Category, TransactionType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import PageHeader from "@/components/shared/PageHeader";
+import CategoryIcon from "@/components/shared/CategoryIcon";
+import IconPicker from "@/components/shared/IconPicker";
+import ColorPicker from "@/components/shared/ColorPicker";
+import { GridSkeleton } from "@/components/shared/Skeletons";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
+import { DEFAULT_CATEGORY_COLOR } from "@/lib/constants";
+import { DEFAULT_ICON_KEY } from "@/lib/icons";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-const COLORS = ["#ef4444","#f97316","#eab308","#22c55e","#10b981","#06b6d4","#3b82f6","#8b5cf6","#ec4899","#6b7280"];
-const EMOJIS = ["🍔","🚗","🏠","💊","🎬","👕","📚","✈️","💪","🎮","🐶","☕","🛒","💰","🎁","⚡","📱","🍺","🎵","💅"];
+const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
+  { value: "expense", label: "Gasto" },
+  { value: "income", label: "Ingreso" },
+];
 
-const DEFAULT_FORM = { name: "", emoji: "⭐", color: "#10b981" };
+const BLANK = {
+  name: "",
+  icon: DEFAULT_ICON_KEY,
+  color: DEFAULT_CATEGORY_COLOR,
+  type: "expense" as TransactionType,
+};
 
 export default function CategoriesPage() {
   const { categories, loading, refetch } = useCategories();
+  const confirm = useConfirm();
   const [editing, setEditing] = useState<Category | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState(DEFAULT_FORM);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(BLANK);
   const [saving, setSaving] = useState(false);
 
-  function openCreate() { setForm(DEFAULT_FORM); setCreating(true); setEditing(null); }
-  function openEdit(c: Category) { setForm({ name: c.name, emoji: c.emoji, color: c.color }); setEditing(c); setCreating(false); }
-  function closeSheet() { setCreating(false); setEditing(null); }
+  function openCreate() {
+    setForm(BLANK);
+    setEditing(null);
+    setOpen(true);
+  }
+  function openEdit(c: Category) {
+    setForm({ name: c.name, icon: c.icon, color: c.color, type: c.type });
+    setEditing(c);
+    setOpen(true);
+  }
 
   async function handleSave() {
-    if (!form.name.trim()) { toast.error("Escribe un nombre"); return; }
+    if (!form.name.trim()) {
+      toast.error("Escribe un nombre");
+      return;
+    }
     setSaving(true);
     const url = editing ? `/api/categories/${editing.id}` : "/api/categories";
-    const method = editing ? "PATCH" : "POST";
     const res = await fetch(url, {
-      method,
+      method: editing ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
@@ -39,7 +65,7 @@ export default function CategoriesPage() {
     if (res.ok) {
       toast.success(editing ? "Categoría actualizada" : "Categoría creada");
       refetch();
-      closeSheet();
+      setOpen(false);
     } else {
       const { error } = await res.json();
       toast.error(error ?? "Error");
@@ -47,63 +73,86 @@ export default function CategoriesPage() {
   }
 
   async function handleDelete(c: Category) {
-    if (c.is_default) { toast.error("No puedes eliminar categorías predeterminadas"); return; }
-    if (!confirm(`¿Eliminar "${c.name}"?`)) return;
+    if (c.is_default) {
+      toast.error("No puedes eliminar categorías predeterminadas");
+      return;
+    }
+    const ok = await confirm({
+      title: "Eliminar categoría",
+      description: `Se eliminará "${c.name}". Las transacciones asociadas quedarán sin categoría.`,
+      confirmLabel: "Eliminar",
+      destructive: true,
+    });
+    if (!ok) return;
     const res = await fetch(`/api/categories/${c.id}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Categoría eliminada"); refetch(); }
+    if (res.ok) {
+      toast.success("Categoría eliminada");
+      refetch();
+    } else {
+      toast.error("No se pudo eliminar");
+    }
   }
-
-  const sheetOpen = creating || !!editing;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Categorías</h1>
-        <Button className="bg-emerald-500 hover:bg-emerald-600" size="icon" onClick={openCreate}>
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+      <PageHeader
+        title="Categorías"
+        action={
+          <Button size="icon" aria-label="Nueva categoría" onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        }
+      />
 
       {loading ? (
-        <div className="grid grid-cols-2 gap-3">
-          {[...Array(6)].map((_, i) => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}
-        </div>
+        <GridSkeleton />
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {categories.map((c) => (
-            <div key={c.id} className="bg-white rounded-xl p-4 shadow-sm flex items-center gap-3">
-              <div
-                className="w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0"
-                style={{ backgroundColor: `${c.color}22` }}
-              >
-                {c.emoji}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{c.name}</p>
-                {c.is_default && <p className="text-xs text-muted-foreground">Predeterminada</p>}
+            <Card key={c.id} className="flex flex-row items-center gap-3 p-3">
+              <CategoryIcon category={c} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{c.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {c.type === "income" ? "Ingreso" : "Gasto"}
+                  {c.is_default ? " · Predeterminada" : ""}
+                </p>
               </div>
               <div className="flex flex-col gap-1">
-                <button onClick={() => openEdit(c)} className="text-gray-400 hover:text-gray-600">
+                <button
+                  onClick={() => openEdit(c)}
+                  aria-label="Editar"
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
                 {!c.is_default && (
-                  <button onClick={() => handleDelete(c)} className="text-gray-400 hover:text-rose-500">
+                  <button
+                    onClick={() => handleDelete(c)}
+                    aria-label="Eliminar"
+                    className="text-muted-foreground transition-colors hover:text-destructive"
+                  >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 )}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
-      <Sheet open={sheetOpen} onOpenChange={(o) => !o && closeSheet()}>
-        <SheetContent side="bottom" className="h-auto rounded-t-2xl pb-8">
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="bottom" className="h-auto max-h-[90vh] overflow-y-auto rounded-t-2xl pb-8">
           <SheetHeader>
             <SheetTitle>{editing ? "Editar categoría" : "Nueva categoría"}</SheetTitle>
           </SheetHeader>
-          <div className="mt-4 space-y-4">
-            <div className="space-y-1">
+          <div className="mt-4 space-y-5">
+            <div className="flex items-center gap-3 rounded-xl bg-muted p-3">
+              <CategoryIcon iconKey={form.icon} color={form.color} size="lg" />
+              <span className="font-medium">{form.name || "Vista previa"}</span>
+            </div>
+
+            <div className="space-y-1.5">
               <Label>Nombre</Label>
               <Input
                 placeholder="Ej: Restaurantes"
@@ -113,44 +162,36 @@ export default function CategoriesPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Emoji</Label>
-              <div className="flex flex-wrap gap-2">
-                {EMOJIS.map((e) => (
-                  <button
-                    key={e}
+              <Label>Tipo</Label>
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
+                {TYPE_OPTIONS.map((option) => (
+                  <Button
+                    key={option.value}
                     type="button"
-                    onClick={() => setForm((f) => ({ ...f, emoji: e }))}
-                    className={`text-xl w-10 h-10 rounded-lg transition-all ${form.emoji === e ? "bg-emerald-100 ring-2 ring-emerald-500 scale-110" : "bg-gray-100"}`}
+                    variant={form.type === option.value ? "default" : "ghost"}
+                    onClick={() => setForm((f) => ({ ...f, type: option.value }))}
                   >
-                    {e}
-                  </button>
+                    {option.label}
+                  </Button>
                 ))}
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex flex-wrap gap-2">
-                {COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setForm((f) => ({ ...f, color: c }))}
-                    className={`w-8 h-8 rounded-full transition-all ${form.color === c ? "ring-2 ring-offset-2 ring-gray-400 scale-110" : ""}`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
+              <ColorPicker value={form.color} onChange={(color) => setForm((f) => ({ ...f, color }))} />
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{ backgroundColor: `${form.color}33` }}>
-                {form.emoji}
-              </div>
-              <span className="font-medium">{form.name || "Vista previa"}</span>
+            <div className="space-y-2">
+              <Label>Ícono</Label>
+              <IconPicker
+                value={form.icon}
+                color={form.color}
+                onChange={(icon) => setForm((f) => ({ ...f, icon }))}
+              />
             </div>
 
-            <Button className="w-full bg-emerald-500 hover:bg-emerald-600" onClick={handleSave} disabled={saving}>
+            <Button className="w-full" onClick={handleSave} disabled={saving}>
               {saving ? "Guardando..." : editing ? "Actualizar" : "Crear categoría"}
             </Button>
           </div>

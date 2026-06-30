@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Category } from "@/lib/types";
 
 export function useCategories() {
@@ -9,12 +8,13 @@ export function useCategories() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("categories")
-      .select("*")
-      .order("name");
-    setCategories((data as Category[]) ?? []);
+    const res = await window.fetch("/api/categories");
+    if (res.ok) {
+      const { data } = await res.json();
+      setCategories((data as Category[]) ?? []);
+    } else {
+      setCategories([]);
+    }
     setLoading(false);
   }, []);
 

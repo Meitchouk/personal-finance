@@ -1,20 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, ArrowLeftRight, Tag, Target, BarChart3, Wallet, LogOut } from "lucide-react";
+import { Wallet, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { PRIMARY_NAV, SECONDARY_NAV } from "@/lib/nav";
+import ThemeToggle from "@/components/shared/ThemeToggle";
 
-const links = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/transactions", label: "Transacciones", icon: ArrowLeftRight },
-  { href: "/categories", label: "Categorías", icon: Tag },
-  { href: "/budgets", label: "Presupuesto", icon: Target },
-  { href: "/reports", label: "Reportes", icon: BarChart3 },
-];
-
-export default function Sidebar({ user }: { user: User }) {
+export default function Sidebar({ email }: { email: string }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -24,27 +17,29 @@ export default function Sidebar({ user }: { user: User }) {
     router.push("/login");
   }
 
+  const items = [...PRIMARY_NAV, ...SECONDARY_NAV];
+
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200 px-4 py-6">
-      <div className="flex items-center gap-2 mb-8 px-2">
-        <div className="bg-emerald-500 text-white p-2 rounded-xl">
+    <div className="flex h-full flex-col border-r border-border bg-sidebar px-3 py-6">
+      <div className="mb-8 flex items-center gap-2 px-2">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <Wallet className="h-5 w-5" />
         </div>
-        <span className="font-bold text-lg">FinanzasApp</span>
+        <span className="text-lg font-bold tracking-tight">FinanzasApp</span>
       </div>
 
       <nav className="flex-1 space-y-1">
-        {links.map(({ href, label, icon: Icon }) => {
+        {items.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 active
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               <Icon className="h-5 w-5" />
@@ -54,11 +49,14 @@ export default function Sidebar({ user }: { user: User }) {
         })}
       </nav>
 
-      <div className="border-t pt-4 mt-4">
-        <p className="text-xs text-gray-500 px-3 mb-2 truncate">{user.email}</p>
+      <div className="mt-4 space-y-3 border-t border-border pt-4">
+        <div className="flex items-center justify-between px-1">
+          <span className="truncate text-xs text-muted-foreground">{email}</span>
+          <ThemeToggle />
+        </div>
         <button
           onClick={signOut}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 w-full"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <LogOut className="h-4 w-4" />
           Cerrar sesión

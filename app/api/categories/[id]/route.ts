@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { buildCategoryPayload } from "@/lib/category-payload";
 import { NextResponse } from "next/server";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -8,9 +9,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
+  const payload = buildCategoryPayload(body);
+  if (!payload.name) {
+    return NextResponse.json({ error: "Escribe un nombre" }, { status: 400 });
+  }
+
   const { data, error } = await supabase
     .from("categories")
-    .update(body)
+    .update(payload)
     .eq("id", id)
     .eq("user_id", user.id)
     .select()
