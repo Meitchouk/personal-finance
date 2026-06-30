@@ -8,8 +8,9 @@ import StatCard from "@/components/shared/StatCard";
 import CategoryPieChart from "@/components/charts/CategoryPieChart";
 import TransactionRow from "@/components/transactions/TransactionRow";
 import EmptyState from "@/components/shared/EmptyState";
+import QuickActions from "@/components/dashboard/QuickActions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Wallet, Receipt } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Receipt, Zap } from "lucide-react";
 
 export default async function DashboardPage() {
   const { from, to } = getCurrentMonthRange();
@@ -36,6 +37,13 @@ export default async function DashboardPage() {
           tone={net >= 0 ? "income" : "expense"}
         />
       </div>
+
+      <section className="space-y-2">
+        <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <Zap className="h-3.5 w-3.5" /> Acciones rápidas
+        </h2>
+        <QuickActions />
+      </section>
 
       {byCategory.length > 0 && (
         <Card>

@@ -20,7 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Sidebar email={user.email ?? ""} />
           </aside>
 
-          <main className="flex-1 pb-24 md:pb-0 md:pl-64">
+          <main className="flex-1 overflow-x-hidden pb-24 md:pb-0 md:pl-64">
             <MobileTopBar />
             <div className="mx-auto max-w-3xl px-4 py-6">{children}</div>
           </main>

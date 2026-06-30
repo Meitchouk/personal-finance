@@ -489,68 +489,81 @@ function SettleSheet({
   );
 }
 
-// ─── Inline item editor ────────────────────────────────────────────────────────
-function EditItemRow({
-  item, onSave, onCancel,
+// ─── Edit item sheet (modal) ───────────────────────────────────────────────────
+function EditItemSheet({
+  item, open, onClose, onSave,
 }: {
-  item: DebtItem;
+  item: DebtItem | null; open: boolean; onClose: () => void;
   onSave: (desc: string, qty: number, unitPrice: number) => Promise<void>;
-  onCancel: () => void;
 }) {
-  const qty = item.quantity ?? 1;
-  const unitPrice = qty > 0 ? Number(item.amount) / qty : Number(item.amount);
+  const qty = item ? (item.quantity ?? 1) : 1;
+  const unitPrice = item ? (qty > 0 ? Number(item.amount) / qty : Number(item.amount)) : 0;
 
-  const [desc, setDesc] = useState(item.description);
-  const [q, setQ] = useState(String(qty));
-  const [price, setPrice] = useState(String(Math.round(unitPrice * 100) / 100));
+  const [desc, setDesc] = useState("");
+  const [q, setQ] = useState("1");
+  const [price, setPrice] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Sync when item changes
+  if (item && open && desc === "" && price === "") {
+    setDesc(item.description);
+    setQ(String(qty));
+    setPrice(String(Math.round(unitPrice * 100) / 100));
+  }
+
+  function reset() { setDesc(""); setQ("1"); setPrice(""); }
 
   const parsedQ = Math.max(1, parseInt(q) || 1);
   const parsedPrice = parseFloat(price) || 0;
   const total = Math.round(parsedQ * parsedPrice * 100) / 100;
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSave() {
     if (!desc.trim() || parsedPrice <= 0) return;
     setSaving(true);
-    try { await onSave(desc.trim(), parsedQ, parsedPrice); }
+    try { await onSave(desc.trim(), parsedQ, parsedPrice); reset(); onClose(); }
     finally { setSaving(false); }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-1.5 py-1.5">
-      <Input
-        autoFocus
-        value={desc}
-        onChange={(e) => setDesc(e.target.value)}
-        placeholder="Descripción"
-        className="h-8 text-sm"
-      />
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 shrink-0">
-          <button type="button"
-            onClick={() => setQ((v) => String(Math.max(1, (parseInt(v) || 1) - 1)))}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted">−</button>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} inputMode="numeric"
-            className="h-7 w-12 text-center text-sm" />
-          <button type="button"
-            onClick={() => setQ((v) => String((parseInt(v) || 1) + 1))}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted">+</button>
+    <AppSheet open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }} title="Editar registro">
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <Label>Descripción</Label>
+          <Input autoFocus value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Descripción" />
         </div>
-        <span className="text-xs text-muted-foreground shrink-0">×</span>
-        <Input value={price} onChange={(e) => setPrice(e.target.value)}
-          inputMode="decimal" placeholder="Precio unit." className="h-7 flex-1 text-sm" />
-        <span className="shrink-0 text-sm font-semibold">
-          = {formatCurrency(total, "NIO")}
-        </span>
-        <button type="submit" disabled={saving || !desc.trim() || parsedPrice <= 0}
-          className="shrink-0 p-1 text-income disabled:opacity-40">
-          <Check className="h-3.5 w-3.5" />
-        </button>
-        <button type="button" onClick={onCancel}
-          className="shrink-0 p-1 text-muted-foreground hover:text-foreground text-xs">✕</button>
+
+        <div className="space-y-1.5">
+          <Label>Cantidad</Label>
+          <div className="flex items-center gap-2">
+            <button type="button"
+              onClick={() => setQ((v) => String(Math.max(1, (parseInt(v) || 1) - 1)))}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-lg hover:bg-muted">−</button>
+            <Input value={q} onChange={(e) => setQ(e.target.value)} inputMode="numeric"
+              className="h-10 flex-1 text-center text-lg font-semibold" />
+            <button type="button"
+              onClick={() => setQ((v) => String((parseInt(v) || 1) + 1))}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-lg hover:bg-muted">+</button>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Precio unitario</Label>
+          <Input value={price} onChange={(e) => setPrice(e.target.value)}
+            inputMode="decimal" placeholder="0.00" className="h-10 text-lg" />
+        </div>
+
+        {parsedQ > 0 && parsedPrice > 0 && (
+          <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3">
+            <span className="text-sm text-muted-foreground">Total</span>
+            <span className="text-xl font-bold">{formatCurrency(total, "NIO")}</span>
+          </div>
+        )}
+
+        <Button className="w-full h-11" onClick={handleSave} disabled={saving || !desc.trim() || parsedPrice <= 0}>
+          {saving ? "Guardando…" : "Guardar cambios"}
+        </Button>
       </div>
-    </form>
+    </AppSheet>
   );
 }
 
@@ -571,7 +584,7 @@ function DebtCard({
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [showPaid, setShowPaid] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<DebtItem | null>(null);
   const items = debt.debt_items ?? [];
   const unpaid = items.filter((i) => !i.is_paid);
   const paid = items.filter((i) => i.is_paid);
@@ -593,9 +606,11 @@ function DebtCard({
                 <BookmarkCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
               )}
               {hasCatalog && (
-                <span className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium bg-blue-500/10 text-blue-500">
+                <button
+                  onClick={onOpenCatalog}
+                  className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors">
                   <Package className="h-2.5 w-2.5" /> catálogo
-                </span>
+                </button>
               )}
             </div>
             {total > 0
@@ -633,47 +648,47 @@ function DebtCard({
         {(unpaid.length > 0 || paid.length > 0) && (
           <div className="border-t border-border px-4 py-2 space-y-1">
             {unpaid.map((item) => (
-              <div key={item.id}>
-                {editingId === item.id ? (
-                  <EditItemRow
-                    item={item}
-                    onSave={async (desc, qty, unitPrice) => {
-                      await onUpdateItem(item.id, { description: desc, quantity: qty, unit_price: unitPrice });
-                      setEditingId(null);
-                    }}
-                    onCancel={() => setEditingId(null)}
-                  />
-                ) : (
-                  <div className="group flex items-center gap-2 py-1">
-                    <button onClick={() => onToggleItem(item)}
-                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border text-muted-foreground hover:border-primary hover:text-primary">
-                      <span className="sr-only">Marcar pagado</span>
+              <div key={item.id} className="flex items-center gap-2 py-1.5 min-h-[2.5rem]">
+                <button
+                  onClick={() => onToggleItem(item)}
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:border-primary hover:text-primary active:scale-95">
+                  <span className="sr-only">Marcar pagado</span>
+                </button>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm">
+                    {(item.quantity ?? 1) > 1 && (
+                      <span className="mr-1 text-xs font-semibold text-muted-foreground">{item.quantity}×</span>
+                    )}
+                    {item.description}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">{formatDate(item.item_date)}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-semibold">{formatCurrency(Number(item.amount), "NIO")}</p>
+                  {(item.quantity ?? 1) > 1 && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {formatCurrency(Number(item.amount) / item.quantity, "NIO")} c/u
+                    </p>
+                  )}
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger render={
+                    <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+                      <MoreVertical className="h-4 w-4" />
                     </button>
-                    <span className="min-w-0 flex-1 truncate text-sm">
-                      {(item.quantity ?? 1) > 1 && (
-                        <span className="mr-1 text-xs font-semibold text-muted-foreground">{item.quantity}×</span>
-                      )}
-                      {item.description}
-                    </span>
-                    <span className="shrink-0 text-xs text-muted-foreground">{formatDate(item.item_date)}</span>
-                    <div className="shrink-0 text-right">
-                      <span className="text-sm font-medium">{formatCurrency(Number(item.amount), "NIO")}</span>
-                      {(item.quantity ?? 1) > 1 && (
-                        <p className="text-[10px] text-muted-foreground">
-                          {formatCurrency(Number(item.amount) / item.quantity, "NIO")} c/u
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => setEditingId(item.id)}
-                      className="shrink-0 p-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground transition-opacity">
-                      <Pencil className="h-3 w-3" />
-                    </button>
-                    <button onClick={() => onDeleteItem(item.id)} className="shrink-0 p-0.5 text-muted-foreground hover:text-destructive">
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
+                  } />
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditingItem(item)}>
+                      <Pencil className="mr-2 h-4 w-4" /> Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onToggleItem(item)}>
+                      <Check className="mr-2 h-4 w-4" /> Marcar pagado
+                    </DropdownMenuItem>
+                    <DropdownMenuItem variant="destructive" onClick={() => onDeleteItem(item.id)}>
+                      <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ))}
 
@@ -707,15 +722,25 @@ function DebtCard({
         )}
 
         {/* Footer */}
-        <div className="flex gap-2 border-t border-border px-4 py-2">
+        <div className="flex gap-2 border-t border-border px-4 py-2.5">
           <button onClick={() => setShowAdd((v) => !v)}
-            className={cn("flex items-center gap-1.5 text-xs transition-colors",
-              showAdd ? "text-foreground" : "text-muted-foreground hover:text-foreground")}>
-            <Plus className="h-3.5 w-3.5" />
+            className={cn("flex items-center gap-1.5 py-1 text-sm transition-colors",
+              showAdd ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground")}>
+            <Plus className="h-4 w-4" />
             {showAdd ? "Cancelar" : "Agregar al fiado"}
           </button>
         </div>
       </CardContent>
+
+      <EditItemSheet
+        item={editingItem}
+        open={!!editingItem}
+        onClose={() => setEditingItem(null)}
+        onSave={async (desc, qty, unitPrice) => {
+          if (!editingItem) return;
+          await onUpdateItem(editingItem.id, { description: desc, quantity: qty, unit_price: unitPrice });
+        }}
+      />
     </Card>
   );
 }
