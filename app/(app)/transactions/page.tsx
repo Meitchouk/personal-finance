@@ -66,11 +66,14 @@ export default function TransactionsPage() {
                   </Button>
                 }
               />
-              <SheetContent side="bottom" className="h-auto max-h-[90vh] overflow-y-auto rounded-t-2xl">
-                <SheetHeader>
+              <SheetContent
+                side="right"
+                className="h-full w-full overflow-y-auto md:w-[clamp(480px,40vw,860px)] md:max-w-none"
+              >
+                <SheetHeader className="border-b border-border">
                   <SheetTitle>Nueva transacción</SheetTitle>
                 </SheetHeader>
-                <div className="mt-4">
+                <div className="px-4 pb-6">
                   <TransactionForm
                     categories={categories}
                     onSuccess={() => { setNewTxOpen(false); refetch(); }}

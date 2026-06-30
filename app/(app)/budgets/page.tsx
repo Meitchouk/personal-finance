@@ -106,8 +106,11 @@ export default function BudgetsPage() {
     }
   }
 
+  const expenseCategories = categories.filter((category) => category.type === "expense");
   const usedIds = new Set(budgets.map((b) => b.category_id));
-  const availableCategories = editing ? categories : categories.filter((c) => !usedIds.has(c.id));
+  const availableCategories = editing
+    ? expenseCategories
+    : expenseCategories.filter((c) => !usedIds.has(c.id));
 
   return (
     <div className="space-y-4">
@@ -208,9 +211,6 @@ export default function BudgetsPage() {
             <div className="space-y-1.5">
               <Label>Límite mensual</Label>
               <Input
-                type="number"
-                step="0.01"
-                min="0"
                 inputMode="decimal"
                 placeholder="0.00"
                 value={form.monthly_limit}

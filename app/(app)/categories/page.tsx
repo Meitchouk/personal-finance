@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useCategories } from "@/lib/hooks/useCategories";
-import type { Category } from "@/lib/types";
+import type { Category, TransactionType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,17 @@ import { DEFAULT_ICON_KEY } from "@/lib/icons";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-const BLANK = { name: "", icon: DEFAULT_ICON_KEY, color: DEFAULT_CATEGORY_COLOR };
+const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
+  { value: "expense", label: "Gasto" },
+  { value: "income", label: "Ingreso" },
+];
+
+const BLANK = {
+  name: "",
+  icon: DEFAULT_ICON_KEY,
+  color: DEFAULT_CATEGORY_COLOR,
+  type: "expense" as TransactionType,
+};
 
 export default function CategoriesPage() {
   const { categories, loading, refetch } = useCategories();
@@ -34,7 +44,7 @@ export default function CategoriesPage() {
     setOpen(true);
   }
   function openEdit(c: Category) {
-    setForm({ name: c.name, icon: c.icon, color: c.color });
+    setForm({ name: c.name, icon: c.icon, color: c.color, type: c.type });
     setEditing(c);
     setOpen(true);
   }
@@ -103,7 +113,10 @@ export default function CategoriesPage() {
               <CategoryIcon category={c} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{c.name}</p>
-                {c.is_default && <p className="text-xs text-muted-foreground">Predeterminada</p>}
+                <p className="text-xs text-muted-foreground">
+                  {c.type === "income" ? "Ingreso" : "Gasto"}
+                  {c.is_default ? " · Predeterminada" : ""}
+                </p>
               </div>
               <div className="flex flex-col gap-1">
                 <button
@@ -146,6 +159,22 @@ export default function CategoriesPage() {
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
+                {TYPE_OPTIONS.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={form.type === option.value ? "default" : "ghost"}
+                    onClick={() => setForm((f) => ({ ...f, type: option.value }))}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-2">

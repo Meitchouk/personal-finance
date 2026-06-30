@@ -71,12 +71,24 @@ async function clearSheet(token: string, spreadsheetId: string, sheetTitle: stri
 }
 
 function transactionsToRows(transactions: Transaction[]): (string | number)[][] {
-  const header = ["Fecha", "Descripción", "Categoría", "Tipo", "Monto"];
+  const header = [
+    "Fecha",
+    "Descripción",
+    "Categoría",
+    "Tipo",
+    "Monto original",
+    "Moneda",
+    "Tasa",
+    "Monto NIO",
+  ];
   const rows = transactions.map((t) => [
     t.date,
     t.description,
     t.categories?.name ?? "Sin categoría",
     t.type === "income" ? "Ingreso" : "Gasto",
+    t.type === "expense" ? -(t.original_amount ?? t.amount) : (t.original_amount ?? t.amount),
+    t.original_currency ?? "NIO",
+    t.exchange_rate ?? 1,
     t.type === "expense" ? -t.amount : t.amount,
   ]);
   return [header, ...rows];
@@ -118,7 +130,7 @@ export async function writeTransactionsToSheet(
           },
           {
             autoResizeDimensions: {
-              dimensions: { sheetId: sheet.sheetId, dimension: "COLUMNS", startIndex: 0, endIndex: 5 },
+              dimensions: { sheetId: sheet.sheetId, dimension: "COLUMNS", startIndex: 0, endIndex: 8 },
             },
           },
         ],

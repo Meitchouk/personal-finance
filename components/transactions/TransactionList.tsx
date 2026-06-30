@@ -83,11 +83,14 @@ export default function TransactionList({ transactions, categories, onRefetch }:
       </div>
 
       <Sheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <SheetContent side="bottom" className="h-auto max-h-[90vh] overflow-y-auto rounded-t-2xl">
-          <SheetHeader>
+        <SheetContent
+          side="right"
+          className="h-full w-full overflow-x-hidden overflow-y-auto md:w-[min(52rem,calc(100vw-2rem))]"
+        >
+          <SheetHeader className="border-b border-border">
             <SheetTitle>Editar transacción</SheetTitle>
           </SheetHeader>
-          <div className="mt-4">
+          <div className="px-4 pb-6">
             {editing && (
               <TransactionForm
                 categories={categories}

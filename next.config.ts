@@ -7,7 +7,9 @@ const withSerwist = withSerwistInit({
   disable: process.env.NODE_ENV === "development",
 });
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  allowedDevOrigins: ["lelah-orrow-unreluctantly.ngrok-free.dev"],
+};
 
 export default withSerwist(nextConfig);
 module.exports = {

@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
 import { Wallet, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import ThemeToggle from "@/components/shared/ThemeToggle";
+import { cn } from "@/lib/utils";
 
 export default function MobileTopBar() {
   return (
@@ -15,9 +16,13 @@ export default function MobileTopBar() {
       </Link>
       <div className="flex items-center gap-2">
         <ThemeToggle />
-        <Button variant="outline" size="icon" aria-label="Ajustes" render={<Link href="/settings" />}>
+        <Link
+          href="/settings"
+          aria-label="Ajustes"
+          className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
+        >
           <Settings className="h-4 w-4" />
-        </Button>
+        </Link>
       </div>
     </header>
   );

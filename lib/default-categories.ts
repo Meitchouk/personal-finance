@@ -1,0 +1,18 @@
+export const DEFAULT_CATEGORIES = [
+  { name: "Comida", icon: "utensils", color: "#ef4444", type: "expense", is_default: true },
+  { name: "Transporte", icon: "bus", color: "#f97316", type: "expense", is_default: true },
+  { name: "Vivienda", icon: "home", color: "#eab308", type: "expense", is_default: true },
+  { name: "Salud", icon: "health", color: "#22c55e", type: "expense", is_default: true },
+  { name: "Entretenimiento", icon: "movie", color: "#3b82f6", type: "expense", is_default: true },
+  { name: "Ropa", icon: "clothes", color: "#8b5cf6", type: "expense", is_default: true },
+  { name: "Educación", icon: "education", color: "#06b6d4", type: "expense", is_default: true },
+  { name: "Viajes", icon: "plane", color: "#ec4899", type: "expense", is_default: true },
+  { name: "Deporte", icon: "gym", color: "#10b981", type: "expense", is_default: true },
+  { name: "Servicios", icon: "home", color: "#64748b", type: "expense", is_default: true },
+  { name: "Salario", icon: "salary", color: "#14b8a6", type: "income", is_default: true },
+  { name: "Freelance", icon: "salary", color: "#0ea5e9", type: "income", is_default: true },
+  { name: "Ventas", icon: "salary", color: "#8b5cf6", type: "income", is_default: true },
+  { name: "Intereses", icon: "salary", color: "#10b981", type: "income", is_default: true },
+  { name: "Otros ingresos", icon: "other", color: "#64748b", type: "income", is_default: true },
+  { name: "Otros gastos", icon: "other", color: "#78716c", type: "expense", is_default: true },
+] as const;

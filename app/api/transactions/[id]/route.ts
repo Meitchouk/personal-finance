@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { buildTransactionPayload } from "@/lib/transactions-payload";
 import { NextResponse } from "next/server";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -8,9 +9,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
+  let payload;
+  try {
+    payload = await buildTransactionPayload(supabase, body);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Datos inválidos" },
+      { status: 400 }
+    );
+  }
+
   const { data, error } = await supabase
     .from("transactions")
-    .update(body)
+    .update(payload)
     .eq("id", id)
     .eq("user_id", user.id)
     .select("*, categories(*)")

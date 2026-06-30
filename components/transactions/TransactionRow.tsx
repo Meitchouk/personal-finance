@@ -1,7 +1,8 @@
 import CategoryIcon from "@/components/shared/CategoryIcon";
 import AmountText from "@/components/shared/AmountText";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/format";
+import { BASE_CURRENCY } from "@/lib/currency";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { Repeat } from "lucide-react";
 import type { Transaction } from "@/lib/types";
 
@@ -31,6 +32,11 @@ export default function TransactionRow({ transaction: t, actions, compact }: Pro
             </Badge>
           )}
           {t.is_recurring && <Repeat className="h-3 w-3 text-muted-foreground" />}
+          {t.original_currency && t.original_currency !== BASE_CURRENCY && (
+            <span className="text-xs text-muted-foreground">
+              {formatCurrency(t.original_amount, t.original_currency)}
+            </span>
+          )}
         </div>
       </div>
       <AmountText amount={t.amount} type={t.type} className="text-sm" />

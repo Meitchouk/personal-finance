@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getAuthCallbackUrl } from "@/lib/auth-url";
 import {
   listSpreadsheets,
   createSpreadsheet,
@@ -87,7 +88,7 @@ export default function SheetsExport({ open, onClose, filters }: Props) {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: getAuthCallbackUrl(),
         scopes: "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly",
         queryParams: { access_type: "offline", prompt: "consent" },
       },

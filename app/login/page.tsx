@@ -1,18 +1,15 @@
 "use client";
 export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
+import { authDebugLog } from "@/lib/auth-debug";
 import { createClient } from "@/lib/supabase/client";
+import { getAuthCallbackUrl } from "@/lib/auth-url";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Wallet, MailCheck } from "lucide-react";
-
-const GOOGLE_SCOPES = [
-  "https://www.googleapis.com/auth/spreadsheets",
-  "https://www.googleapis.com/auth/drive.readonly",
-].join(" ");
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -21,7 +18,23 @@ export default function LoginPage() {
 
   // Surface auth errors returned by the OAuth callback.
   useEffect(() => {
+    const supabase = createClient();
     const error = new URLSearchParams(window.location.search).get("error");
+    authDebugLog(window.location.host, "login", "mounted", {
+      href: window.location.href,
+      origin: window.location.origin,
+      callbackUrl: getAuthCallbackUrl(),
+      error: error ?? null,
+    });
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      authDebugLog(window.location.host, "login", "session-check", {
+        hasSession: Boolean(data.session),
+        userIdPrefix: data.session?.user.id.slice(0, 8) ?? null,
+        error: error?.message ?? null,
+      });
+    });
+
     if (error) {
       toast.error(error === "auth" ? "Falló el inicio de sesión" : error);
       window.history.replaceState(null, "", "/login");
@@ -32,25 +45,55 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     const supabase = createClient();
+    const callbackUrl = getAuthCallbackUrl();
+
+    authDebugLog(window.location.host, "login", "magic-link-start", {
+      callbackUrl,
+      hasEmail: Boolean(email),
+    });
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: callbackUrl },
     });
     setLoading(false);
-    if (error) toast.error(error.message);
-    else setSent(true);
+    if (error) {
+      authDebugLog(window.location.host, "login", "magic-link-error", {
+        message: error.message,
+        status: error.status ?? null,
+      });
+      toast.error(error.message);
+    } else {
+      authDebugLog(window.location.host, "login", "magic-link-sent");
+      setSent(true);
+    }
   }
 
   async function handleGoogle() {
     const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
+    const callbackUrl = getAuthCallbackUrl();
+
+    authDebugLog(window.location.host, "login", "google-start", {
+      callbackUrl,
+      scopes: "default-profile-email",
+    });
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: GOOGLE_SCOPES,
-        queryParams: { access_type: "offline", prompt: "consent" },
+        redirectTo: callbackUrl,
       },
     });
+
+    authDebugLog(window.location.host, "login", "google-result", {
+      providerRedirectUrl: data.url ? new URL(data.url).origin : null,
+      hasError: Boolean(error),
+      error: error?.message ?? null,
+    });
+
+    if (error) {
+      toast.error(error.message);
+    }
   }
 
   return (
