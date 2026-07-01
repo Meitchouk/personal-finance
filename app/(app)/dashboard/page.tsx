@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getPreferences, getTransactionsBetween } from "@/lib/supabase/queries";
+import { getPreferences, getTransactionsBetween, getActiveDebts } from "@/lib/supabase/queries";
 import { getCurrentMonthRange } from "@/lib/utils/date-helpers";
 import { summarize, spendingByCategory } from "@/lib/utils/aggregations";
 import { formatCurrency, formatMonthYear } from "@/lib/format";
@@ -14,25 +14,29 @@ import { TrendingUp, TrendingDown, Wallet, Receipt, Zap } from "lucide-react";
 
 export default async function DashboardPage() {
   const { from, to } = getCurrentMonthRange();
-  const [{ currency }, transactions] = await Promise.all([
+  const [{ currency, exchangeRate }, transactions, activeDebts] = await Promise.all([
     getPreferences(),
     getTransactionsBetween(from, to),
+    getActiveDebts(),
   ]);
 
   const { income, expenses, net } = summarize(transactions);
   const byCategory = spendingByCategory(transactions);
   const recent = transactions.slice(0, 5);
 
+  // Convert NIO totals to the user's display currency.
+  const display = (nio: number) => formatCurrency(nio * exchangeRate, currency);
+
   return (
     <div className="space-y-6">
       <PageHeader title="Dashboard" subtitle={formatMonthYear()} />
 
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Ingresos" value={formatCurrency(income, currency)} icon={TrendingUp} tone="income" />
-        <StatCard label="Gastos" value={formatCurrency(expenses, currency)} icon={TrendingDown} tone="expense" />
+        <StatCard label="Ingresos" value={display(income)} icon={TrendingUp} tone="income" />
+        <StatCard label="Gastos" value={display(expenses)} icon={TrendingDown} tone="expense" />
         <StatCard
           label="Balance"
-          value={formatCurrency(net, currency)}
+          value={display(net)}
           icon={Wallet}
           tone={net >= 0 ? "income" : "expense"}
         />
@@ -42,7 +46,7 @@ export default async function DashboardPage() {
         <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <Zap className="h-3.5 w-3.5" /> Acciones rápidas
         </h2>
-        <QuickActions />
+        <QuickActions activeDebts={activeDebts} />
       </section>
 
       {byCategory.length > 0 && (

@@ -12,8 +12,10 @@ export function summarize(transactions: Transaction[]): MonthlySummary {
   let income = 0;
   let expenses = 0;
   for (const t of transactions) {
-    if (t.type === "income") income += t.amount;
-    else expenses += t.amount;
+    // Supabase returns numeric columns as strings in JSON — coerce to number.
+    const amount = Number(t.amount);
+    if (t.type === "income") income += amount;
+    else expenses += amount;
   }
   return { income, expenses, net: income - expenses };
 }
@@ -25,10 +27,11 @@ export function spendingByCategory(transactions: Transaction[]): CategorySpendin
 
   for (const t of transactions) {
     if (t.type !== "expense" || !t.categories || !t.category_id) continue;
-    total += t.amount;
+    const amount = Number(t.amount);
+    total += amount;
     const entry = map.get(t.category_id);
-    if (entry) entry.total += t.amount;
-    else map.set(t.category_id, { category: t.categories, total: t.amount });
+    if (entry) entry.total += amount;
+    else map.set(t.category_id, { category: t.categories, total: amount });
   }
 
   return Array.from(map.values())
