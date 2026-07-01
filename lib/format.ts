@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { getLocalNow } from "@/lib/utils/date-helpers";
 
 export type CurrencyCode = "NIO" | "USD";
 
@@ -35,7 +36,7 @@ export function formatDate(date: string): string {
 }
 
 /** "Junio 2026" capitalized — used for monthly sheet tabs and labels. */
-export function formatMonthYear(date: Date = new Date()): string {
+export function formatMonthYear(date: Date = getLocalNow()): string {
   const s = format(date, "MMMM yyyy", { locale: es });
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
